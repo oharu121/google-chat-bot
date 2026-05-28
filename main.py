@@ -1,8 +1,10 @@
 import json
 import sys
+import threading
 
 import functions_framework
-from flask import jsonify
+
+from worker import process_message
 
 
 def create_message(text):
@@ -27,14 +29,21 @@ def handle_chat(request):
     print(f"REQUEST BODY: {json.dumps(body, ensure_ascii=False) if body else 'None'}", file=sys.stderr, flush=True)
 
     if not body:
-        return jsonify(create_message("Empty request"))
+        return create_message("Empty request")
 
     chat = body.get("chat", {})
     message_payload = chat.get("messagePayload", {})
     message = message_payload.get("message", {})
+    space_name = message_payload.get("space", {}).get("name")
+    user_message_name = message.get("name")
     user_text = message.get("text", "")
     sender = message.get("sender", {}).get("displayName", "someone")
 
-    response = create_message(f"Hello {sender}! You said: {user_text}")
-    print(f"RESPONSE: {json.dumps(response, ensure_ascii=False)}", file=sys.stderr, flush=True)
-    return jsonify(response)
+    if space_name:
+        thread = threading.Thread(
+            target=process_message,
+            args=(space_name, user_text, sender, user_message_name),
+        )
+        thread.start()
+
+    return {}
