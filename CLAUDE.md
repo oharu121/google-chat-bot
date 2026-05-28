@@ -8,9 +8,18 @@
 - Cloud Functions 2nd gen (Cloud Run-based), region `asia-northeast1`
 - Cloud Run is uv-native: always deploy directly from `pyproject.toml` + `uv.lock`. Never export or generate `requirements.txt`
 - Always deploy with `--no-allow-unauthenticated`
-- Deploy command:
+- Deploy command (two steps):
   ```
-  gcloud functions deploy google-chat-bot --gen2 --runtime=python312 --region=asia-northeast1 --source=. --entry-point=handle_chat --trigger-http --no-allow-unauthenticated
+  gcloud functions deploy google-chat-bot --gen2 --runtime=python312 --region=asia-northeast1 --source=. --entry-point=handle_chat --trigger-http --no-allow-unauthenticated --memory=512Mi --cpu=1
+  gcloud run services update google-chat-bot --region=asia-northeast1 --no-cpu-throttling
+  ```
+- `--no-cpu-throttling` is required because the bot uses background threads for progressive card updates. CPU throttling freezes threads after the HTTP response returns.
+- `--cpu=1` is the minimum required for `--no-cpu-throttling`.
+
+## Chat API
+- `chat_discovery.json` is a bundled static discovery document for the Chat API v1. This avoids a ~2 min network download on cold start. Re-download periodically if Google updates the API:
+  ```
+  curl -o chat_discovery.json 'https://chat.googleapis.com/$discovery/rest?version=v1'
   ```
 
 ## Package Management

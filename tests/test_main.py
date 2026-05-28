@@ -61,3 +61,58 @@ def test_no_thread_without_space_name(mock_thread_cls, make_request):
     request = make_request(payload)
     handle_chat(request)
     mock_thread_cls.assert_not_called()
+
+
+# --- CARD_CLICKED event routing ---
+
+def _card_click_event(function_name="feedback", vote="up", message_id="spaces/S/messages/M"):
+    return {
+        "commonEventObject": {
+            "invokedFunction": function_name,
+            "parameters": {
+                "vote": vote,
+                "message_id": message_id,
+            },
+        },
+        "user": {"displayName": "Alice", "name": "users/123"},
+    }
+
+
+@patch("main.feedback")
+def test_card_click_routes_to_feedback_handler(mock_feedback, make_request):
+    mock_feedback.handle_card_click.return_value = {"actionResponse": {"type": "UPDATE_MESSAGE"}}
+    request = make_request(_card_click_event())
+    handle_chat(request)
+    mock_feedback.handle_card_click.assert_called_once()
+
+
+@patch("main.feedback")
+def test_card_click_returns_handler_response(mock_feedback, make_request):
+    expected = {"actionResponse": {"type": "UPDATE_MESSAGE"}, "cardsV2": []}
+    mock_feedback.handle_card_click.return_value = expected
+    request = make_request(_card_click_event())
+    result = handle_chat(request)
+    assert result == expected
+
+
+@patch("main.feedback")
+def test_unknown_function_returns_empty(mock_feedback, make_request):
+    request = make_request(_card_click_event(function_name="unknown_fn"))
+    result = handle_chat(request)
+    assert result == {}
+    mock_feedback.handle_card_click.assert_not_called()
+
+
+@patch("main.threading.Thread")
+def test_card_click_does_not_spawn_thread(mock_thread_cls, make_request):
+    request = make_request(_card_click_event())
+    handle_chat(request)
+    mock_thread_cls.assert_not_called()
+
+
+@patch("main.threading.Thread")
+def test_message_event_ignores_card_click_routing(mock_thread_cls, make_request):
+    mock_thread_cls.return_value = MagicMock()
+    request = make_request(_addons_request("hello", sender_name="Alice", space_name="spaces/S"))
+    handle_chat(request)
+    mock_thread_cls.assert_called_once()

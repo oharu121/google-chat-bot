@@ -1,8 +1,9 @@
-from unittest.mock import MagicMock
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from chat_api import ChatApiClient
+from chat_api import ChatApiClient, _DISCOVERY_DOC_PATH
 
 
 @pytest.fixture
@@ -13,6 +14,17 @@ def mock_service():
 @pytest.fixture
 def client(mock_service):
     return ChatApiClient(service=mock_service)
+
+
+class TestDiscoveryDoc:
+    def test_discovery_doc_file_exists(self):
+        assert _DISCOVERY_DOC_PATH.exists()
+
+    def test_discovery_doc_is_valid_json(self):
+        import json
+        doc = json.loads(_DISCOVERY_DOC_PATH.read_text())
+        assert doc["name"] == "chat"
+        assert doc["version"] == "v1"
 
 
 class TestCreateMessage:

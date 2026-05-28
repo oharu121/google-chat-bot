@@ -1,14 +1,33 @@
+import json
+import threading
+from pathlib import Path
+
 import google.auth
-from googleapiclient.discovery import build
+from googleapiclient.discovery import build_from_document
 
 SCOPES = ["https://www.googleapis.com/auth/chat.bot"]
+
+_DISCOVERY_DOC_PATH = Path(__file__).parent / "chat_discovery.json"
+
+_default_service = None
+_lock = threading.Lock()
+
+
+def _get_default_service():
+    global _default_service
+    if _default_service is None:
+        with _lock:
+            if _default_service is None:
+                credentials, _ = google.auth.default(scopes=SCOPES)
+                doc = json.loads(_DISCOVERY_DOC_PATH.read_text())
+                _default_service = build_from_document(doc, credentials=credentials)
+    return _default_service
 
 
 class ChatApiClient:
     def __init__(self, service=None):
         if service is None:
-            credentials, _ = google.auth.default(scopes=SCOPES)
-            self._service = build("chat", "v1", credentials=credentials)
+            self._service = _get_default_service()
         else:
             self._service = service
 

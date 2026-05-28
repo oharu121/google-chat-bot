@@ -4,6 +4,7 @@ import threading
 
 import functions_framework
 
+import feedback
 from worker import process_message
 
 
@@ -30,6 +31,14 @@ def handle_chat(request):
 
     if not body:
         return create_message("Empty request")
+
+    # Route CARD_CLICKED events
+    common_event = body.get("commonEventObject", {})
+    invoked_function = common_event.get("invokedFunction")
+    if invoked_function:
+        if invoked_function == "feedback":
+            return feedback.handle_card_click(body)
+        return {}
 
     chat = body.get("chat", {})
     message_payload = chat.get("messagePayload", {})

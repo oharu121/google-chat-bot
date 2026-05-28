@@ -1,13 +1,13 @@
 # Google Chat Bot
 
-Google Chat bot with cardsV2 thinking-to-patch pattern, running on Cloud Functions (2nd gen) with Python and uv.
+Google Chat bot with progressive cardsV2 updates, running on Cloud Functions (2nd gen) with Python and uv.
 
-When a user sends a message, the bot immediately shows a "Thinking..." card, then patches it with the final result — simulating progress updates since Google Chat doesn't support streaming.
+When a user sends a message, the bot shows a progressive card that updates in real-time through pipeline steps (analyze, build query, search KB, generate answer), with a collapsible step accordion and feedback buttons on completion.
 
 ## Stack
 
 - Python 3.12
-- Cloud Functions 2nd gen (asia-northeast1)
+- Cloud Functions 2nd gen (asia-northeast1, `--no-cpu-throttling`)
 - uv (package manager)
 - functions-framework
 - google-api-python-client + google-auth
@@ -15,10 +15,14 @@ When a user sends a message, the bot immediately shows a "Thinking..." card, the
 ## Architecture
 
 ```
-main.py          → HTTP handler (returns {}, spawns thread)
-worker.py        → Orchestration: thinking card → work → patch result
-cards.py         → Pure cardsV2 builder functions
-chat_api.py      → Chat API wrapper with DI for testability
+main.py              → HTTP handler (returns {}, spawns thread, routes CARD_CLICKED)
+worker.py            → Pipeline orchestration with step tracking
+cards.py             → cardsV2 builders (progressive card, thinking, result, error)
+models.py            → Pipeline data model (StepStatus, PipelineState)
+throttle.py          → Rate-limit-aware patcher (1 write/sec/space)
+feedback.py          → CARD_CLICKED event handler (thumbs up/down)
+chat_api.py          → Chat API wrapper with static discovery doc
+chat_discovery.json  → Bundled Chat API v1 discovery document
 ```
 
 ## Setup
@@ -37,6 +41,7 @@ uv run functions-framework --target=handle_chat --port=8080
 ## Deploy
 
 ```bash
+# Step 1: Deploy function
 gcloud functions deploy google-chat-bot \
   --gen2 \
   --runtime=python312 \
@@ -44,7 +49,14 @@ gcloud functions deploy google-chat-bot \
   --source=. \
   --entry-point=handle_chat \
   --trigger-http \
-  --no-allow-unauthenticated
+  --no-allow-unauthenticated \
+  --memory=512Mi \
+  --cpu=1
+
+# Step 2: Disable CPU throttling (required for background threads)
+gcloud run services update google-chat-bot \
+  --region=asia-northeast1 \
+  --no-cpu-throttling
 ```
 
 Then configure the bot in [Google Chat API Configuration](https://console.cloud.google.com/apis/api/chat.googleapis.com/hangouts-chat).
@@ -55,5 +67,6 @@ Google Chat HTTP endpoints now use the **Google Workspace Add-ons** format:
 
 - Request: message is at `body["chat"]["messagePayload"]["message"]`
 - Response: must be wrapped in `hostAppDataAction.chatDataAction.createMessageAction.message`
+- Button clicks: use `hostAppDataAction.chatDataAction.updateMessageAction` (not `renderActions`)
 
 The older `{"text": "..."}` response format no longer works.
