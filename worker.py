@@ -10,12 +10,6 @@ def process_message(space_name, user_text, sender, user_message_name=None, chat_
     if chat_client is None:
         chat_client = ChatApiClient()
 
-    if user_message_name:
-        try:
-            chat_client.add_reaction(user_message_name, "👀")
-        except Exception:
-            logger.warning("Failed to add reaction", exc_info=True)
-
     try:
         thinking_body = build_thinking_card()
         message_name = chat_client.create_message(space_name, thinking_body)

@@ -1,13 +1,25 @@
-# Google Chat Echo Bot
+# Google Chat Bot
 
-Minimal Google Chat bot running on Cloud Functions (2nd gen) with Python and uv.
+Google Chat bot with cardsV2 thinking-to-patch pattern, running on Cloud Functions (2nd gen) with Python and uv.
+
+When a user sends a message, the bot immediately shows a "Thinking..." card, then patches it with the final result — simulating progress updates since Google Chat doesn't support streaming.
 
 ## Stack
 
-- Python 3.14
+- Python 3.12
 - Cloud Functions 2nd gen (asia-northeast1)
 - uv (package manager)
 - functions-framework
+- google-api-python-client + google-auth
+
+## Architecture
+
+```
+main.py          → HTTP handler (returns {}, spawns thread)
+worker.py        → Orchestration: thinking card → work → patch result
+cards.py         → Pure cardsV2 builder functions
+chat_api.py      → Chat API wrapper with DI for testability
+```
 
 ## Setup
 
@@ -15,13 +27,11 @@ Minimal Google Chat bot running on Cloud Functions (2nd gen) with Python and uv.
 # Install dependencies
 uv sync
 
+# Run tests
+uv run pytest -v
+
 # Run locally
 uv run functions-framework --target=handle_chat --port=8080
-
-# Test locally
-curl -X POST http://localhost:8080 \
-  -H "Content-Type: application/json" \
-  -d '{"chat": {"messagePayload": {"message": {"text": "hello", "sender": {"displayName": "Test"}}}}}'
 ```
 
 ## Deploy
@@ -29,12 +39,12 @@ curl -X POST http://localhost:8080 \
 ```bash
 gcloud functions deploy google-chat-bot \
   --gen2 \
-  --runtime=python314 \
+  --runtime=python312 \
   --region=asia-northeast1 \
   --source=. \
   --entry-point=handle_chat \
   --trigger-http \
-  --allow-unauthenticated
+  --no-allow-unauthenticated
 ```
 
 Then configure the bot in [Google Chat API Configuration](https://console.cloud.google.com/apis/api/chat.googleapis.com/hangouts-chat).

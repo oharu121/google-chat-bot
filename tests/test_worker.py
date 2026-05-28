@@ -13,10 +13,6 @@ def mock_client():
 
 
 class TestProcessMessage:
-    def test_reacts_to_user_message(self, mock_client):
-        process_message("spaces/S", "hello", "Alice", "spaces/S/messages/USER", mock_client)
-        mock_client.add_reaction.assert_called_once_with("spaces/S/messages/USER", "👀")
-
     def test_creates_thinking_card(self, mock_client):
         process_message("spaces/S", "hello", "Alice", chat_client=mock_client)
         mock_client.create_message.assert_called_once()
@@ -30,11 +26,11 @@ class TestProcessMessage:
         process_message("spaces/S", "hello", "Alice", chat_client=mock_client)
         mock_client.patch_message.assert_called_once()
         args = mock_client.patch_message.call_args
-        assert args[0][0] == "spaces/S/messages/M"  # message name from create
+        assert args[0][0] == "spaces/S/messages/M"
         body = args[0][1]
         assert "cardsV2" in body
         assert body["cardsV2"][0]["cardId"] == "result-card"
-        assert args[0][2] == "cardsV2"  # update_mask
+        assert args[0][2] == "cardsV2"
 
     def test_result_contains_echo_text(self, mock_client):
         process_message("spaces/S", "hello", "Alice", chat_client=mock_client)
@@ -52,20 +48,9 @@ class TestProcessMessage:
         mock_client.patch_message.side_effect = Exception("Patch failed")
         process_message("spaces/S", "hello", "Alice", chat_client=mock_client)
 
-    def test_reaction_failure_does_not_block(self, mock_client):
-        mock_client.add_reaction.side_effect = Exception("Reaction failed")
-        process_message("spaces/S", "hello", "Alice", "spaces/S/messages/USER", mock_client)
-        mock_client.create_message.assert_called_once()
-        mock_client.patch_message.assert_called_once()
-
-    def test_no_reaction_without_user_message_name(self, mock_client):
-        process_message("spaces/S", "hello", "Alice", chat_client=mock_client)
-        mock_client.add_reaction.assert_not_called()
-
-    def test_call_order_reaction_then_create_then_patch(self, mock_client):
-        process_message("spaces/S", "hi", "Bob", "spaces/S/messages/USER", mock_client)
+    def test_call_order_create_then_patch(self, mock_client):
+        process_message("spaces/S", "hi", "Bob", chat_client=mock_client)
         expected_order = [
-            call.add_reaction("spaces/S/messages/USER", "👀"),
             call.create_message("spaces/S", mock_client.create_message.call_args[0][1]),
             call.patch_message("spaces/S/messages/M", mock_client.patch_message.call_args[0][1], "cardsV2"),
         ]
