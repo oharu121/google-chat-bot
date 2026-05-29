@@ -49,7 +49,7 @@ def build_error_card(error_message):
     }
 
 
-def build_progressive_card(state, message_name=None):
+def build_progressive_card(state, message_name=None, endpoint_url=None):
     from models import PipelineStatus
 
     sections = [_build_status_steps_section(state)]
@@ -58,7 +58,7 @@ def build_progressive_card(state, message_name=None):
         sections.append(_build_content_section(state.content_paragraphs))
 
     if state.status == PipelineStatus.COMPLETED:
-        sections.append(_build_feedback_section(message_name))
+        sections.append(_build_feedback_section(message_name, endpoint_url))
 
     return {
         "cardsV2": [{
@@ -97,8 +97,9 @@ def _build_content_section(paragraphs):
     return {"widgets": widgets}
 
 
-def _build_feedback_section(message_name):
+def _build_feedback_section(message_name, endpoint_url):
     msg_id = message_name or ""
+    function_url = endpoint_url or ""
     return {
         "widgets": [{
             "buttonList": {
@@ -107,8 +108,9 @@ def _build_feedback_section(message_name):
                         "text": "Helpful",
                         "onClick": {
                             "action": {
-                                "function": "feedback",
+                                "function": function_url,
                                 "parameters": [
+                                    {"key": "action", "value": "feedback"},
                                     {"key": "vote", "value": "up"},
                                     {"key": "message_id", "value": msg_id},
                                 ],
@@ -119,8 +121,9 @@ def _build_feedback_section(message_name):
                         "text": "Not helpful",
                         "onClick": {
                             "action": {
-                                "function": "feedback",
+                                "function": function_url,
                                 "parameters": [
+                                    {"key": "action", "value": "feedback"},
                                     {"key": "vote", "value": "down"},
                                     {"key": "message_id", "value": msg_id},
                                 ],

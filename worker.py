@@ -8,7 +8,7 @@ from throttle import ThrottledPatcher
 logger = logging.getLogger(__name__)
 
 
-def process_message(space_name, user_text, sender, user_message_name=None, chat_client=None):
+def process_message(space_name, user_text, sender, user_message_name=None, chat_client=None, endpoint_url=None):
     if chat_client is None:
         chat_client = ChatApiClient()
 
@@ -64,7 +64,7 @@ def process_message(space_name, user_text, sender, user_message_name=None, chat_
         # Final state
         state.status = PipelineStatus.COMPLETED
         state.current_step_description = "4 ステップ完了"
-        final_body = build_progressive_card(state, message_name=message_name)
+        final_body = build_progressive_card(state, message_name=message_name, endpoint_url=endpoint_url)
         patcher.patch(final_body, force=True)
     except Exception:
         logger.error("Failed during pipeline execution", exc_info=True)

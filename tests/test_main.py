@@ -65,11 +65,16 @@ def test_no_thread_without_space_name(mock_thread_cls, make_request):
 
 # --- CARD_CLICKED event routing ---
 
-def _card_click_event(function_name="feedback", vote="up", message_id="spaces/S/messages/M"):
+ENDPOINT_URL = "https://asia-northeast1-test.cloudfunctions.net/google-chat-bot"
+
+
+def _card_click_event(action="feedback", vote="up", message_id="spaces/S/messages/M"):
+    """Build a CARD_CLICKED event. invokedFunction is the endpoint URL for HTTP add-ons."""
     return {
         "commonEventObject": {
-            "invokedFunction": function_name,
+            "invokedFunction": ENDPOINT_URL,
             "parameters": {
+                "action": action,
                 "vote": vote,
                 "message_id": message_id,
             },
@@ -96,8 +101,8 @@ def test_card_click_returns_handler_response(mock_feedback, make_request):
 
 
 @patch("main.feedback")
-def test_unknown_function_returns_empty(mock_feedback, make_request):
-    request = make_request(_card_click_event(function_name="unknown_fn"))
+def test_unknown_action_returns_empty(mock_feedback, make_request):
+    request = make_request(_card_click_event(action="unknown_action"))
     result = handle_chat(request)
     assert result == {}
     mock_feedback.handle_card_click.assert_not_called()

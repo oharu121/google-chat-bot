@@ -17,11 +17,10 @@ def _make_click_event(function_name="feedback", vote="up", message_id="spaces/S/
 
 
 class TestHandleCardClick:
-    def test_returns_update_message_action_format(self):
+    def test_returns_action_response_format(self):
         result = handle_card_click(_make_click_event(vote="up"))
-        action = result["hostAppDataAction"]["chatDataAction"]["updateMessageAction"]
-        assert "message" in action
-        assert "cardsV2" in action["message"]
+        assert result["actionResponse"]["type"] == "UPDATE_MESSAGE"
+        assert "cardsV2" in result
 
     def test_logs_feedback(self, caplog):
         with caplog.at_level(logging.INFO):

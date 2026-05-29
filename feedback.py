@@ -18,24 +18,17 @@ def handle_card_click(event_body):
     logger.info("Feedback: vote=%s user=%s message=%s", vote, user_name, message_id)
 
     return {
-        "hostAppDataAction": {
-            "chatDataAction": {
-                "updateMessageAction": {
-                    "message": {
-                        "cardsV2": [{
-                            "cardId": "progressive-card",
-                            "card": {
-                                "sections": [{
-                                    "widgets": [{
-                                        "textParagraph": {
-                                            "text": "フィードバックありがとうございます！"
-                                        }
-                                    }]
-                                }]
-                            }
-                        }]
-                    }
-                }
+        "actionResponse": {"type": "UPDATE_MESSAGE"},
+        "cardsV2": [{
+            "cardId": "progressive-card",
+            "card": {
+                "sections": [{
+                    "widgets": [{
+                        "textParagraph": {
+                            "text": "フィードバックありがとうございます！"
+                        }
+                    }]
+                }]
             }
-        }
+        }],
     }

@@ -121,3 +121,4 @@ class TestProcessMessage:
     def test_patcher_constructed_with_message_name(self, MockPatcher, mock_client):
         process_message("spaces/S", "hello", "Alice", chat_client=mock_client)
         MockPatcher.assert_called_once_with(mock_client, "spaces/S/messages/M")
+

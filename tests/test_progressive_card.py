@@ -136,6 +136,8 @@ class TestContentSection:
 
 
 class TestFeedbackSection:
+    ENDPOINT_URL = "https://asia-northeast1-test.cloudfunctions.net/google-chat-bot"
+
     def test_omitted_when_processing(self):
         state = _make_state(status=PipelineStatus.PROCESSING)
         result = build_progressive_card(state)
@@ -143,19 +145,37 @@ class TestFeedbackSection:
 
     def test_present_when_completed(self):
         state = _make_state(status=PipelineStatus.COMPLETED)
-        result = build_progressive_card(state, message_name="spaces/S/messages/M")
+        result = build_progressive_card(
+            state, message_name="spaces/S/messages/M", endpoint_url=self.ENDPOINT_URL
+        )
         assert _has_feedback_buttons(result)
 
-    def test_buttons_have_feedback_function(self):
+    def test_buttons_use_endpoint_url_as_function(self):
         state = _make_state(status=PipelineStatus.COMPLETED)
-        result = build_progressive_card(state, message_name="spaces/S/messages/M")
+        result = build_progressive_card(
+            state, message_name="spaces/S/messages/M", endpoint_url=self.ENDPOINT_URL
+        )
         buttons = _get_feedback_buttons(result)
         for btn in buttons:
-            assert btn["onClick"]["action"]["function"] == "feedback"
+            assert btn["onClick"]["action"]["function"] == self.ENDPOINT_URL
+
+    def test_buttons_have_action_parameter(self):
+        state = _make_state(status=PipelineStatus.COMPLETED)
+        result = build_progressive_card(
+            state, message_name="spaces/S/messages/M", endpoint_url=self.ENDPOINT_URL
+        )
+        buttons = _get_feedback_buttons(result)
+        for btn in buttons:
+            params = btn["onClick"]["action"]["parameters"]
+            action_params = [p for p in params if p["key"] == "action"]
+            assert len(action_params) == 1
+            assert action_params[0]["value"] == "feedback"
 
     def test_buttons_have_vote_params(self):
         state = _make_state(status=PipelineStatus.COMPLETED)
-        result = build_progressive_card(state, message_name="spaces/S/messages/M")
+        result = build_progressive_card(
+            state, message_name="spaces/S/messages/M", endpoint_url=self.ENDPOINT_URL
+        )
         buttons = _get_feedback_buttons(result)
         votes = set()
         for btn in buttons:

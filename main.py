@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import threading
 
@@ -32,11 +33,11 @@ def handle_chat(request):
     if not body:
         return create_message("Empty request")
 
-    # Route CARD_CLICKED events
+    # Route CARD_CLICKED events (invokedFunction is endpoint URL for HTTP add-ons)
     common_event = body.get("commonEventObject", {})
-    invoked_function = common_event.get("invokedFunction")
-    if invoked_function:
-        if invoked_function == "feedback":
+    if common_event.get("invokedFunction"):
+        params = common_event.get("parameters", {})
+        if params.get("action") == "feedback":
             return feedback.handle_card_click(body)
         return {}
 
@@ -48,10 +49,15 @@ def handle_chat(request):
     user_text = message.get("text", "")
     sender = message.get("sender", {}).get("displayName", "someone")
 
+    host = request.headers.get("X-Forwarded-Host") or request.headers.get("Host", "")
+    scheme = request.headers.get("X-Forwarded-Proto", "https")
+    service = os.environ.get("K_SERVICE", "")
+    endpoint_url = f"{scheme}://{host}/{service}" if host else ""
     if space_name:
         thread = threading.Thread(
             target=process_message,
             args=(space_name, user_text, sender, user_message_name),
+            kwargs={"endpoint_url": endpoint_url},
         )
         thread.start()
 

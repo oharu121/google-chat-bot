@@ -6,7 +6,7 @@ When a user sends a message, the bot shows a progressive card that updates in re
 
 ## Stack
 
-- Python 3.12
+- Python 3.14
 - Cloud Functions 2nd gen (asia-northeast1, `--no-cpu-throttling`)
 - uv (package manager)
 - functions-framework
@@ -44,7 +44,7 @@ uv run functions-framework --target=handle_chat --port=8080
 # Step 1: Deploy function
 gcloud functions deploy google-chat-bot \
   --gen2 \
-  --runtime=python312 \
+  --runtime=python314 \
   --region=asia-northeast1 \
   --source=. \
   --entry-point=handle_chat \
@@ -67,6 +67,7 @@ Google Chat HTTP endpoints now use the **Google Workspace Add-ons** format:
 
 - Request: message is at `body["chat"]["messagePayload"]["message"]`
 - Response: must be wrapped in `hostAppDataAction.chatDataAction.createMessageAction.message`
-- Button clicks: use `hostAppDataAction.chatDataAction.updateMessageAction` (not `renderActions`)
+- Button clicks: CARD_CLICKED responses use `actionResponse: {type: "UPDATE_MESSAGE"}` with top-level `cardsV2` (not `renderActions` or `updateMessageAction`)
+- Button `action.function` must be the full endpoint HTTPS URL (not a function name)
 
 The older `{"text": "..."}` response format no longer works.

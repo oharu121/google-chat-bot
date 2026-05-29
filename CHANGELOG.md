@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.2.1 (2026-05-29)
+
+### Fixed
+
+- Feedback buttons now work: `action.function` uses full endpoint HTTPS URL instead of function name
+- Endpoint URL construction uses `K_SERVICE` env var (Cloud Functions strips path prefix from `request.path`)
+- CARD_CLICKED response format changed to `actionResponse: {type: "UPDATE_MESSAGE"}` with top-level `cardsV2`
+
+### Changed
+
+- Upgraded Cloud Functions runtime from python312 to python314
+- Added "Research Before Assuming" rule to CLAUDE.md
+- Updated README with correct button click response format
+
 ## v0.2.0 (2026-05-28)
 
 ### Added
